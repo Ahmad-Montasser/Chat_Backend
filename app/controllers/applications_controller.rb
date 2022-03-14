@@ -30,11 +30,10 @@ class ApplicationsController < ApplicationController
   def create
     unless application_params.blank?
         tokenID = SecureRandom.uuid
-        paramsWithToken = application_params.merge(:app_token => tokenID).to_json
-        @application = Application.new(JSON.parse(paramsWithToken))
-        if @application.save
-          @applications = Application.where(:app_token => tokenID).as_json(:except => :id)
-          render json: @applications
+        paramsWithTokenAndNumber = application_params.merge(:app_token => tokenID,:chatCount => 0).to_json
+        @application = Application.new(JSON.parse(paramsWithTokenAndNumber))
+        if @application.save          
+          render json: @application.as_json(:except => :id)   
         else
           raise ActiveRecord::RecordNotFound.new('Not Found')
       end

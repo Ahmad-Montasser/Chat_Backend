@@ -20,21 +20,16 @@ class ChatsController < ApplicationController
 
   # Create new chat in a specific app (POST /applications/:token/chats)
   def create
-    unless chat_params[:app_token].blank?
-      allChatsinApp =Chat.where(:app_token => chat_params[:app_token])
-      
-      if allChatsinApp.blank?
-        chatParamsWithNo = chat_params.merge(:chat_number => 1).to_json
-      else
-        currentChatNumber = allChatsinApp.maximum('chat_number') + 1
-        chatParamsWithNo = chat_params.merge(:chat_number => currentChatNumber).to_json
-      end          
-        @chat = Chat.new(JSON.parse(chatParamsWithNo))        
-        if @chat.save
-         render json: @chat  
-        else
-        raise ActiveRecord::RecordNotFound.new('Not Found')
-        end
+    redis = Redis.new(host: "localhost")
+    unless params[:app_token].blank?
+      if !redis.exists?(params[:app_token])
+        redis.set(params[:app_token], 1)
+      end 
+      NewChatCreate.perform_later(params.permit(:app_token))
+      currentChatNumber = redis.get(params[:app_token]).to_i
+      puts currentChatNumber
+      chatParamsWithNoAndAppToken = {"chat_number" => currentChatNumber,"app_token" => params[:app_token],"messageCount" => 0}.to_json
+      render json: chatParamsWithNoAndAppToken.as_json
     end
   end
 
@@ -69,6 +64,6 @@ class ChatsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def chat_params
-      params.permit(:app_token)
+      chat_params.require(:chat) if chat_params[:chat].present?
     end
 end

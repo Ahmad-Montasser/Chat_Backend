@@ -11,6 +11,7 @@ def allMessagesInChat
   end
 end
 
+# Get a specific message in a chat by app token, chat number & message number (GET /applications/:token/chats/:chat_number/messages/message_number)
 def specificMessage
   unless params[:app_token].blank?
     @message = Message.where(:app_token => params[:app_token],:chat_number => params[:chat_number],:message_number => params[:message_number]).as_json(:except => :id)
@@ -18,23 +19,20 @@ def specificMessage
   end
 end
 
-  # POST /messages or /messages.json
+  # Create Message in a chat (POST /applications/:token/chats/:chat_number/messages)
   def create
+    redis = Redis.new(host: "localhost")
     unless params[:app_token].blank?
-      allMessagesinChat =Message.where(:app_token => params[:app_token],:chat_number => params[:chat_number])
-
-      if allMessagesinChat.blank?
-        messageParamsWithNo = message_params.merge(:message_number => 1,:app_token => params[:app_token],:chat_number =>params[:chat_number]).to_json
-      else
-        currentMessageNumber = allMessagesinChat.maximum('message_number') + 1
-        messageParamsWithNo = message_params.merge(:message_number => currentMessageNumber,:app_token => params[:app_token],:chat_number =>params[:chat_number]).to_json
-      end          
-        @message = Message.new(JSON.parse(messageParamsWithNo))        
-        if @message.save
-         render json: @message  
-        else
-        raise ActiveRecord::RecordNotFound.new('Not Found')
-        end
+      key =params[:app_token]+params[:chat_number].to_s
+      if !redis.exists?(key)
+        redis.set(key, 1)
+      end
+      currentMessageNumber = redis.get(key).to_i
+      NewMessageCreate.perform_later(params.permit(:app_token,:chat_number,:content),params[:message][:content])
+      puts 'XXXXXXXXXXXXXXXXXx'
+      puts currentMessageNumber
+      messageParamsWithNoAndAppToken = {"chat_number" => params[:chat_number],"app_token" => params[:app_token],"messageCount" => 0,"message_number" => currentMessageNumber,"content"=> params[:message][:content]}.to_json
+      render json: messageParamsWithNoAndAppToken.as_json
     end
   end
 
@@ -58,6 +56,15 @@ end
       end
   end
 
+  def search
+    unless params[:query].blank?
+      puts 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+      puts params[:query]
+      @result = Message.search( params[:query] )
+      render json: @result
+    end
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_message
@@ -66,6 +73,6 @@ end
 
     # Only allow a list of trusted parameters through.
     def message_params
-      params.require(:message).permit(:app_token,:chat_number,:content)
+      params.require(:message).permit(:content)
     end
 end
