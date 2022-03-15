@@ -58,10 +58,12 @@ end
 
   def search
     unless params[:query].blank?
-      puts 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-      puts params[:query]
-      @result = Message.search( params[:query] )
-      render json: @result
+     
+      @result = Message.searchInMessage( params[:query] ,params[:chat_number])
+      response = @result.map{ |item|{message: item[:_source].as_json(:except => :id) }}
+
+      puts response
+       render json: response.as_json
     end
   end
 
@@ -73,6 +75,6 @@ end
 
     # Only allow a list of trusted parameters through.
     def message_params
-      params.require(:message).permit(:content)
+      params.require(:message).permit(:content,:chat_number)
     end
 end
