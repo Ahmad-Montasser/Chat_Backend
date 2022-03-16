@@ -9,7 +9,6 @@ class Message < ApplicationRecord
                     query:    query,
                     fields: [:content]
                 }
-                        
             }
             
         })

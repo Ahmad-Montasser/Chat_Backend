@@ -20,41 +20,19 @@ class ChatsController < ApplicationController
 
   # Create new chat in a specific app (POST /applications/:token/chats)
   def create
-    redis = Redis.new(host: "localhost")
+    redis = Redis.new(host: "redis")
     unless params[:app_token].blank?
       if !redis.exists?(params[:app_token])
         redis.set(params[:app_token], 1)
-      end 
+      end
       NewChatCreate.perform_later(params.permit(:app_token))
       currentChatNumber = redis.get(params[:app_token]).to_i
-      puts currentChatNumber
       chatParamsWithNoAndAppToken = {"chat_number" => currentChatNumber,"app_token" => params[:app_token],"messageCount" => 0}.to_json
       render json: chatParamsWithNoAndAppToken.as_json
     end
   end
 
-  # PATCH/PUT /chats/1 or /chats/1.json
-  def update
-    respond_to do |format|
-      if @chat.update(chat_params)
-        format.html { redirect_to chat_url(@chat), notice: "Chat was successfully updated." }
-        format.json { render :show, status: :ok, location: @chat }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @chat.errors, status: :unprocessable_entity }
-      end
-    end
-  end
 
-  # DELETE /chats/1 or /chats/1.json
-  def destroy
-    @chat.destroy
-
-    respond_to do |format|
-      format.html { redirect_to chats_url, notice: "Chat was successfully destroyed." }
-      format.json { head :no_content }
-    end
-  end
 
   private
     # Use callbacks to share common setup or constraints between actions.

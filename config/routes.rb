@@ -8,6 +8,8 @@ Rails.application.routes.draw do
   get '/applications/:app_token/chats/:chat_number/messages', to: 'messages#allMessagesInChat'
   get '/applications/:app_token/chats/:chat_number/messages/:message_number', to: 'messages#specificMessage'
   post '/applications/:app_token/chats/:chat_number/messages', to: 'messages#create'
-  
   post '/applications/:app_token/chats/:chat_number/search/:query', to: 'messages#search'
+  put '/applications/:app_token/chats/:chat_number/messages/:message_number', to:'message#update'
+  put '/applications/:app_token', to: 'applications#update'
+  
 end

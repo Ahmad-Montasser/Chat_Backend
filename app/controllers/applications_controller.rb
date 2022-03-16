@@ -41,18 +41,17 @@ class ApplicationsController < ApplicationController
   end
   
 
-  # PATCH/PUT /applications/1 or /applications/1.json
-  def update
-    respond_to do |format|
-      if @application.update(application_params)
-        format.html { redirect_to application_url(@application), notice: "Application was successfully updated." }
-        format.json { render :show, status: :ok, location: @application }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @application.errors, status: :unprocessable_entity }
-      end
-    end
+ # Update App name (PUT applications/:app_token)
+ def update
+  unless params[:app_token].blank?
+    applications = Application.where(:app_token => params[:app_token]).as_json(:except => :id)
+    unless application.blank?
+    UpdateApplication.perform_later(application,params[:app_name])
+    messageParamsWithNoAndAppToken = {"application" => {"app_name"=> params[:app_name]}}.to_json
+  render json: messageParamsWithNoAndAppToken.as_json
   end
+end
+end
 
   # DELETE /applications/1 or /applications/1.json
   def destroy
@@ -74,4 +73,5 @@ class ApplicationsController < ApplicationController
     def application_params
       params.require(:application).permit(:app_name)
     end
+  
 end
