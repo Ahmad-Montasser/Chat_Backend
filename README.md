@@ -1,4 +1,4 @@
-# README
+# Chat Backend Task
 
 * Ruby version
 
